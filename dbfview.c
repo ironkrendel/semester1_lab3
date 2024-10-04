@@ -26,5 +26,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    
+    free(file->fields);
+    free(file);
+
+    return 0;
 }
