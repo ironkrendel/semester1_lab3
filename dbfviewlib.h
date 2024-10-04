@@ -5,13 +5,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 #include "dbfstructs.h"
 
 #define read_param(p, s) ({ \
     err_code = read(file_index, p, s); \
     if (err_code < 0) { \
-        printf("Encountered an error when reading file. Error number: %d\n", err_code); \
+        printf("Encountered an error when reading file. Error number: %d\n", errno); \
         return NULL; \
     } \
     })
@@ -50,28 +51,38 @@ void* read_dbf(char* filepath) {
 
     int desc_cnt = 0;
     unsigned char* desc_buf;
-    read_param(desc_buf, 1);
+    read_param(&desc_buf, 1);
 
-    while (*desc_buf != 13) {
+    while (desc_buf != 13) {
         desc_cnt++;
+
+        file->fields = realloc(file->fields, sizeof(void*) * desc_cnt);
 
         struct dbf_field* field = malloc(sizeof(struct dbf_field));
 
         char* name_buf = malloc(10);
         read_param(name_buf, 10);
-        field->name = realloc(desc_buf, 11);
+        field->name = malloc(11);
+        field->name[0] = desc_buf;
         strcpy(field->name + 1, name_buf);
-        free(name_buf);
-        skip_bytes(21);
+        read_param(&field->type, 1);
+        skip_bytes(4);
+        read_param(&field->length, 1);
+        read_param(&field->dec_cnt, 1);
+        read_param(&field->id, 2);
+        read_param(&field->example, 1);
+        skip_bytes(10);
+        read_param(&field->mdx_flag, 1);
 
-        read_param(desc_buf, 1);
+        file->fields[desc_cnt - 1] = field;
+
+        read_param(&desc_buf, 1);
     }
 
     file->metadata = *metadata;
-    file->fields = NULL;
+    file->field_count = desc_cnt;
     file->records = NULL;
 
-    free(metadata);
     close(file_index);
 
     return file;

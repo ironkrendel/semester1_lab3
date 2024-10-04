@@ -26,9 +26,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    printf("%d\n", file->metadata.header_size);
-    printf("%d\n", file->metadata.record_count);
-    printf("%d\n", file->metadata.record_size);
+    for (int i = 0;i < file->field_count; i++) {
+        printf("%s\n", ((struct dbf_field*)file->fields[i])->name);
+    }
 
     free(file->fields);
     free(file->records);

@@ -2,7 +2,7 @@ struct dbf_field {
     char* name;
     char type;
     unsigned char length;
-    unsigned char dec;
+    unsigned char dec_cnt;
     unsigned int id;
     unsigned char example;
     bool mdx_flag;
@@ -22,6 +22,7 @@ struct dbf_metadata {
 
 struct dbf_file{
     struct dbf_metadata metadata;
-    void* fields;
+    void** fields;
+    int field_count;
     void* records;
 };
