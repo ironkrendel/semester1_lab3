@@ -1,5 +1,6 @@
 *
 !dbfview.c
 !dbfviewlib.h
+!dbfstructs.h
 !/examples
 !.gitignore

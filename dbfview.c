@@ -26,7 +26,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    printf("%d\n", file->metadata.header_size);
+    printf("%d\n", file->metadata.record_count);
+    printf("%d\n", file->metadata.record_size);
+
     free(file->fields);
+    free(file->records);
     free(file);
 
     return 0;

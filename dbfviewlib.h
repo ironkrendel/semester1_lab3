@@ -4,6 +4,9 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+
+#include "dbfstructs.h"
 
 #define read_param(p, s) ({ \
     err_code = read(file_index, p, s); \
@@ -18,23 +21,6 @@
     read_param(dump, n); \
     free(dump); \
     })
-
-struct dbf_metadata {
-    unsigned char general_info;
-    unsigned long last_update;
-    unsigned long record_count;
-    unsigned int header_size;
-    unsigned int record_size;
-    bool incomplete_transaction;
-    bool encryption_flag;
-    bool mdx_flag;
-    unsigned char language_id;
-};
-
-struct dbf_file{
-    struct dbf_metadata metadata;
-    void* fields;
-};
 
 void* read_dbf(char* filepath) {
     int file_index = open(filepath, O_RDONLY);
@@ -62,10 +48,28 @@ void* read_dbf(char* filepath) {
     read_param(&metadata->language_id, 1);
     skip_bytes(2);
 
-    file->fields = malloc(metadata->record_count * metadata->record_size);
+    int desc_cnt = 0;
+    unsigned char* desc_buf;
+    read_param(desc_buf, 1);
+
+    while (*desc_buf != 13) {
+        desc_cnt++;
+
+        struct dbf_field* field = malloc(sizeof(struct dbf_field));
+
+        char* name_buf = malloc(10);
+        read_param(name_buf, 10);
+        field->name = realloc(desc_buf, 11);
+        strcpy(field->name + 1, name_buf);
+        free(name_buf);
+        skip_bytes(21);
+
+        read_param(desc_buf, 1);
+    }
 
     file->metadata = *metadata;
     file->fields = NULL;
+    file->records = NULL;
 
     free(metadata);
     close(file_index);
