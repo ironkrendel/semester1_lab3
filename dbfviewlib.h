@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -25,6 +24,7 @@
 
 void* read_dbf(char* filepath) {
     int file_index = open(filepath, O_RDONLY);
+    printf("%d\n", fcntl(file_index, F_GETFL, 0));
     struct dbf_file* file = malloc(sizeof(struct dbf_file));
     struct dbf_metadata* metadata = malloc(sizeof(struct dbf_metadata));
 
@@ -53,7 +53,8 @@ void* read_dbf(char* filepath) {
     unsigned char* desc_buf;
     read_param(&desc_buf, 1);
 
-    while (desc_buf != 13) {
+    while (((int)desc_buf % 3145728) != 13) { // fcntl read function randomly adds ~3 mil to output even though it exceeds 1 byte ???????????
+        printf("%d\n", desc_buf);
         desc_cnt++;
 
         file->fields = realloc(file->fields, sizeof(void*) * desc_cnt);
@@ -77,6 +78,7 @@ void* read_dbf(char* filepath) {
         file->fields[desc_cnt - 1] = field;
 
         read_param(&desc_buf, 1);
+        sleep(0.05);
     }
 
     file->metadata = *metadata;

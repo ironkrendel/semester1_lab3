@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <stdlib.h>
 
 #include "dbfviewlib.h"
@@ -27,7 +25,8 @@ int main(int argc, char** argv) {
     }
 
     for (int i = 0;i < file->field_count; i++) {
-        printf("%s\n", ((struct dbf_field*)file->fields[i])->name);
+        struct dbf_field* cur_field = file->fields[i];
+        printf("%s %c %d %d\n", cur_field->name, cur_field->type, cur_field->length, cur_field->dec_cnt);
     }
 
     free(file->fields);
