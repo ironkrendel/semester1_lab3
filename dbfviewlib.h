@@ -8,10 +8,10 @@
 
 #include "dbfstructs.h"
 
-#define read_param(p, s) ({ \
-    err_code = read(file_index, p, s); \
+#define read_param(p, n) ({ \
+    err_code = read(file_index, p, n); \
     if (err_code < 0) { \
-        printf("Encountered an error when reading file. Error number: %d\n", errno); \
+        printf("Encountered an error %d when reading file. Error number: %d\n", err_code, errno); \
         return NULL; \
     } \
     })
@@ -24,7 +24,6 @@
 
 void* read_dbf(char* filepath) {
     int file_index = open(filepath, O_RDONLY);
-    printf("%d\n", fcntl(file_index, F_GETFL, 0));
     struct dbf_file* file = malloc(sizeof(struct dbf_file));
     struct dbf_metadata* metadata = malloc(sizeof(struct dbf_metadata));
 
@@ -53,8 +52,7 @@ void* read_dbf(char* filepath) {
     unsigned char* desc_buf;
     read_param(&desc_buf, 1);
 
-    while (((int)desc_buf % 3145728) != 13) { // fcntl read function randomly adds ~3 mil to output even though it exceeds 1 byte ???????????
-        printf("%d\n", desc_buf);
+    while (((unsigned long long)desc_buf % 256) != 13) {
         desc_cnt++;
 
         file->fields = realloc(file->fields, sizeof(void*) * desc_cnt);
@@ -78,12 +76,26 @@ void* read_dbf(char* filepath) {
         file->fields[desc_cnt - 1] = field;
 
         read_param(&desc_buf, 1);
-        sleep(0.05);
+    }
+
+    skip_bytes(1);
+
+    file->records = malloc(sizeof(void*) * metadata->record_count);
+
+    for (int i = 0;i < metadata->record_count;i++) {
+        file->records[i] = malloc(sizeof(void*) * desc_cnt);
+
+        for (int j = 0;j < desc_cnt;j++) {
+            file->records[i][j] = malloc(((struct dbf_field*)file->fields[j])->length * 2);
+            read_param(&file->records[i][j], ((struct dbf_field*)file->fields[j])->length);
+            printf("%d ", ((struct dbf_field*)file->fields[j])->length);
+        }
+        printf("\n");
+        skip_bytes(1);
     }
 
     file->metadata = *metadata;
     file->field_count = desc_cnt;
-    file->records = NULL;
 
     close(file_index);
 
