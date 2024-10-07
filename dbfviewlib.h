@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -8,26 +6,20 @@
 
 #include "dbfstructs.h"
 
-#define read_param(p, n) ({ \
-    err_code = read(file_index, p, n); \
-    if (err_code < 0) { \
-        printf("Encountered an error %d when reading file. Error number: %d\n", err_code, errno); \
-        return NULL; \
-    } \
+#define read_param(p, n) ({\
+    fread(p, sizeof(char) * n, 1, file_ptr);\
     })
 
-#define skip_bytes(n) ({ \
-    void* dump = malloc(n); \
-    read_param(dump, n); \
-    free(dump); \
+#define skip_bytes(n) ({\
+    fseek(file_ptr, n, SEEK_CUR);\
     })
 
 void* read_dbf(char* filepath) {
-    int file_index = open(filepath, O_RDONLY);
+    FILE* file_ptr = fopen(filepath, "r");
     struct dbf_file* file = malloc(sizeof(struct dbf_file));
     struct dbf_metadata* metadata = malloc(sizeof(struct dbf_metadata));
 
-    if (file_index == -1) {
+    if (file_ptr == NULL) {
         printf("Error when opening file.\n");
 
         return NULL;
@@ -49,7 +41,7 @@ void* read_dbf(char* filepath) {
     skip_bytes(2);
 
     int desc_cnt = 0;
-    unsigned char* desc_buf;
+    unsigned char desc_buf;
     read_param(&desc_buf, 1);
 
     while (((unsigned long long)desc_buf % 256) != 13) {
@@ -86,18 +78,16 @@ void* read_dbf(char* filepath) {
         file->records[i] = malloc(sizeof(void*) * desc_cnt);
 
         for (int j = 0;j < desc_cnt;j++) {
-            file->records[i][j] = malloc(((struct dbf_field*)file->fields[j])->length * 2);
-            read_param(&file->records[i][j], ((struct dbf_field*)file->fields[j])->length);
-            printf("%d ", ((struct dbf_field*)file->fields[j])->length);
+            file->records[i][j] = malloc(((struct dbf_field*)file->fields[j])->length);
+            read_param(file->records[i][j], ((struct dbf_field*)file->fields[j])->length);
         }
-        printf("\n");
         skip_bytes(1);
     }
 
     file->metadata = *metadata;
     file->field_count = desc_cnt;
 
-    close(file_index);
+    fclose(file_ptr);
 
     return file;
 }

@@ -24,5 +24,5 @@ struct dbf_file{
     struct dbf_metadata metadata;
     void** fields;
     int field_count;
-    char*** records;
+    unsigned char*** records;
 };

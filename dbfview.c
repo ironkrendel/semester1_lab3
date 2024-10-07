@@ -28,12 +28,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    printf("%d\n", file->metadata.record_count);
-    printf("%d\n", file->metadata.record_size);
     for (int i = 0;i < file->field_count; i++) {
         struct dbf_field* cur_field = file->fields[i];
         if (file->metadata.language_id == 0) {
-            printf("%-20s ", cur_field->name);
+            printf("%-*s ", max(cur_field->length, 20), cur_field->name);
         }
         else {
             printf("%-*s ", 20 - strlen(cur_field->name) / 2 + strlen(cur_field->name), cur_field->name);
@@ -45,7 +43,7 @@ int main(int argc, char** argv) {
         for (int j = 0;j < file->field_count;j++) {
             struct dbf_field* cur_field = file->fields[j];
             char* buf = malloc((cur_field->length + 1));
-            strncpy(buf, &(file->records[i][j]), cur_field->length);
+            strncpy(buf, file->records[i][j], cur_field->length);
             buf[cur_field->length] = '\0';
             
             if (cur_field->type == 'C') {
